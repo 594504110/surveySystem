@@ -1,0 +1,72 @@
+{% extends 'web/public/layout.html' %}
+{% block app-page %}
+  <template>
+    <div>
+      <div class="col-xs-2">
+        <input type="text" class="form-control" placeholder="标题、班级名称" v-model="search">
+      </div>
+      <div class="col-xs-1">
+        <button class="btn btn-success" @click="searchData">查询</button>
+      </div>
+    </div>
+    <br>
+    <el-table :data="tableData" style="width: 100%" @sort-change="sortData">
+      <el-table-column :prop="item.prop" :label="item.label" v-for="(item, index) in tableFields" sortable="custom">
+        <template slot-scope="scope">
+          <div v-html="scope.row[item.prop]"></div>
+        </template>
+      </el-table-column>
+    </el-table>
+    <br>
+    <el-pagination
+      background
+      @current-change="changePage"
+      layout="prev, pager, next"
+      :page-size="pageSize"
+      :total="total">
+    </el-pagination>
+  </template>
+{% endblock %}
+{% block js %}
+  <script>
+      new Vue({
+          el: "#app",
+          data() {
+              return {
+                  search: "",
+                  total: 0,
+                  pageSize: 0,
+                  offset: 0,
+                  ordering: "",
+                  tableFields: [],
+                  tableData: []
+              }
+          },
+          mounted: function () {
+              this.initTableData()
+          },
+          methods: {
+              initTableData: function () {
+                  let vm = this;
+                  axios.get(`/api/surveys/?search=${vm.search}&limit=${vm.pageSize}&offset=${vm.offset}&ordering=${vm.ordering}`,).then(function (resp) {
+                      vm.tableFields = resp.data.fields;
+                      vm.tableData = resp.data.data.results;
+                      vm.total = resp.data.data.count;
+                      vm.pageSize = resp.data.data.page_size;
+                  });
+              },
+              searchData: function () {
+                  this.initTableData()
+              },
+              changePage: function (page) {
+                  this.offset = (page - 1) * this.pageSize;
+                  this.initTableData()
+              },
+              sortData: function (item) {
+                  this.ordering = item.order === "ascending" ? item.prop : "-" + item.prop;
+                  this.initTableData()
+              }
+          }
+      })
+  </script>
+{% endblock %}

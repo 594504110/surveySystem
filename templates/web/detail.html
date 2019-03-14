@@ -1,0 +1,80 @@
+{% extends 'web/public/layout.html' %}
+{% block css %}
+  <style>
+    h3 {
+      margin-top: 40px;
+    }
+  </style>
+{% endblock %}
+{% block app-page %}
+  <template>
+    <div>
+      <div class="col-xs-2">
+        <input type="text" class="form-control" placeholder="填写唯一码" v-model="uniqueCode">
+      </div>
+    </div>
+    <br>
+    <div v-for="(item, index) in formData">
+      <h3>{% templatetag openvariable %}item.name{% templatetag closevariable %}</h3>
+      <el-form label-width="80px" label-position="top">
+        <el-form-item v-for="(question, index) in item.questions" :label="question.name" :error="question.error">
+          <el-radio-group v-if="question.answer_type == 'single'" v-model="question.value">
+            <el-radio :label="choice.points" v-for="(choice, index) in question.choices">
+              {% templatetag openvariable %}choice.content{% templatetag closevariable %}
+            </el-radio>
+          </el-radio-group>
+          <el-input v-else type="textarea" v-model="question.value"></el-input>
+        </el-form-item>
+      </el-form>
+    </div>
+    <div>
+      <div class="col-xs-2">
+        <button class="btn btn-success" @click="submitForm">创建问卷调查</button>
+      </div>
+    </div>
+  </template>
+{% endblock %}
+{% block js %}
+  <script>
+      new Vue({
+          el: "#app",
+          data() {
+              return {
+                  formData: [],
+                  uniqueCode: ""
+              }
+          },
+          mounted: function () {
+              this.initFormData()
+          },
+          methods: {
+              submitForm() {
+                  let vm = this;
+                  axios.post("/api/survey/2/", {
+                      "unique_code": vm.uniqueCode,
+                      "form_data": vm.formData
+                  }).then(function (resp) {
+                      if (resp.data.status){
+
+                      }else {
+                          let data = resp.data.errors.form_data;
+                          for (let i=0;i<data.length;i++){
+                              let errors = data[i]["questions"];
+                              for (let j=0;j<errors.length;j++){
+                                let error = errors[j].value.toString();
+                                vm.formData[i]["questions"][j].error = error
+                              }
+                          }
+                      }
+                  })
+              },
+              initFormData() {
+                  let vm = this;
+                  axios.get("/api/survey/2/").then(function (resp) {
+                      vm.formData = resp.data.surveys;
+                  })
+              }
+          }
+      })
+  </script>
+{% endblock %}
